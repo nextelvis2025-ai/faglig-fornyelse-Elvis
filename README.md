@@ -60,4 +60,3 @@ På den sidste dag i forløbet afholder vi en udstilling / mini-fernisering, hvo
 
 **Evaluering:**
 Faget afsluttes med en samlet karakter på 7 trins skalaen. Karakteren bliver tildelt ved afslutningen af faget og vil afspejle din samlede indsats, forståelse og evne til at anvende den nyerhvervede viden til at udarbejde et konkret produkt.
-

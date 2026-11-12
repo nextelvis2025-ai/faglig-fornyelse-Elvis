@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#101522" />
+    <title>SpeakEasy - Text to Speech</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: "Segoe UI", Arial, sans-serif;
+        background: #101522;
+        color: #f4f7fb;
+        font-synthesis: none;
+        text-rendering: optimizeLegibility;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        min-width: 320px;
+        min-height: 100vh;
+        margin: 0;
+        background:
+          radial-gradient(ellipse at 20% 5%, #163050 0, transparent 38%),
+          #101522;
+      }
+
+      #music-background {
+        position: fixed;
+        z-index: 0;
+        inset: 0;
+        display: none;
+        width: 100%;
+        height: 100%;
+        border: 0;
+        opacity: 0.3;
+        pointer-events: none;
+      }
+
+      body.music-active {
+        background: #101522;
+      }
+
+      body.music-active #music-background {
+        display: block;
+      }
+
+      main {
+        position: relative;
+        z-index: 1;
+        width: min(760px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 48px 0;
+      }
+
+      .card {
+        padding: clamp(22px, 5vw, 38px);
+        border: 1px solid #ffffff1a;
+        border-radius: 22px;
+        background: #171e2df2;
+        box-shadow: 0 24px 80px #0008;
+        backdrop-filter: blur(12px);
+      }
+
+      .eyebrow {
+        margin: 0 0 8px;
+        color: #7dd3fc;
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(2rem, 7vw, 3rem);
+        letter-spacing: -0.04em;
+      }
+
+      .intro {
+        margin: 10px 0 28px;
+        color: #aab5c8;
+        line-height: 1.6;
+      }
+
+      label,
+      .label-row {
+        display: block;
+        margin-bottom: 9px;
+        font-size: 0.9rem;
+        font-weight: 650;
+      }
+
+      .label-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .muted,
+      #text-count {
+        color: #aab5c8;
+        font-size: 0.85rem;
+        font-weight: 400;
+      }
+
+      textarea,
+      select {
+        width: 100%;
+        border: 1px solid #39465d;
+        border-radius: 12px;
+        background: #0e1420;
+        color: #f4f7fb;
+        font: inherit;
+      }
+
+      textarea {
+        min-height: 190px;
+        padding: 15px;
+        resize: vertical;
+        line-height: 1.6;
+      }
+
+      textarea:focus,
+      select:focus,
+      button:focus-visible {
+        outline: 2px solid #38bdf8;
+        outline-offset: 2px;
+      }
+
+      .controls {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(150px, 0.7fr);
+        gap: 20px;
+        margin-top: 20px;
+      }
+
+      select {
+        min-height: 44px;
+        padding: 0 12px;
+      }
+
+      input[type="range"] {
+        width: 100%;
+        accent-color: #38bdf8;
+      }
+
+      .speed-value {
+        float: right;
+        color: #aab5c8;
+        font-size: 0.85rem;
+        font-weight: 400;
+      }
+
+      .buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 24px;
+      }
+
+      button {
+        min-height: 44px;
+        padding: 0 17px;
+        border: 0;
+        border-radius: 10px;
+        background: #253044;
+        color: #f4f7fb;
+        cursor: pointer;
+        font: inherit;
+        font-weight: 650;
+      }
+
+      button:hover {
+        filter: brightness(1.13);
+      }
+
+      button.primary {
+        background: #38bdf8;
+        color: #082f49;
+      }
+
+      #status {
+        min-height: 1.5em;
+        margin: 18px 0 0;
+        color: #aab5c8;
+        font-size: 0.9rem;
+      }
+
+      #song-notice {
+        display: none;
+        margin-top: 18px;
+        padding: 14px;
+        border: 1px solid #38bdf855;
+        border-radius: 12px;
+        background: #0e2638;
+        color: #d7f2ff;
+        line-height: 1.5;
+      }
+
+      body.song-detected #song-notice {
+        display: block;
+      }
+
+      #song-notice button {
+        min-height: 36px;
+        margin: 10px 8px 0 0;
+        padding: 0 12px;
+        font-size: 0.85rem;
+      }
+
+      #play-music-button:disabled {
+        cursor: not-allowed;
+        opacity: 0.55;
+      }
+
+      #song-notice a {
+        display: inline-block;
+        margin-top: 10px;
+        padding: 9px 12px;
+        border-radius: 8px;
+        background: #38bdf8;
+        color: #082f49;
+        font-size: 0.85rem;
+        font-weight: 700;
+        text-decoration: none;
+      }
+
+      #song-notice a:hover {
+        filter: brightness(1.13);
+      }
+
+      #song-help {
+        margin: 6px 0 0;
+        font-size: 0.9rem;
+      }
+
+      #song-notice a:focus-visible {
+        outline: 2px solid #38bdf8;
+        outline-offset: 2px;
+      }
+
+      @media (max-width: 560px) {
+        main {
+          padding: 20px 0;
+        }
+
+        .controls {
+          grid-template-columns: 1fr;
+          gap: 15px;
+        }
+
+        .label-row {
+          align-items: baseline;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <iframe
+      id="music-background"
+      title="Linkin Park - In the End music video"
+      allow="autoplay; encrypted-media; picture-in-picture"
+      referrerpolicy="strict-origin-when-cross-origin"
+    ></iframe>
+
+    <main>
+      <section class="card" aria-labelledby="page-title">
+        <p class="eyebrow">Your words, out loud</p>
+        <h1 id="page-title">SpeakEasy</h1>
+        <p class="intro">
+          Type or paste something below, choose a voice, and let your browser
+          read it aloud. Type <strong>“In the end”</strong> anywhere to bring
+          on the music-video background.
+        </p>
+
+        <div class="label-row">
+          <label for="text-input">Text to read</label>
+          <span id="text-count">0 characters · 0 words</span>
+        </div>
+        <textarea
+          id="text-input"
+          placeholder="Start typing here..."
+          spellcheck="true"
+        ></textarea>
+
+        <div class="controls">
+          <div>
+            <label for="voice-select">Voice</label>
+            <select id="voice-select" aria-label="Speech voice"></select>
+          </div>
+          <div>
+            <label for="speed">
+              Speed <span class="speed-value"><span id="speed-value">1.0</span>x</span>
+            </label>
+            <input id="speed" type="range" min="0.6" max="1.8" step="0.1" value="1" />
+          </div>
+        </div>
+
+        <div class="buttons">
+          <button class="primary" id="speak-button" type="button">Speak</button>
+          <button id="stop-button" type="button">Stop speech</button>
+          <button id="clear-button" type="button">Clear text</button>
+        </div>
+
+        <p id="status" role="status" aria-live="polite">Ready</p>
+        <aside id="song-notice" aria-live="polite">
+          <strong>In the End</strong> detected.
+          <p id="song-help">The background player is loading.</p>
+          <button id="play-music-button" class="primary" type="button">
+            Play background music
+          </button>
+          <a
+            href="https://www.youtube.com/watch?v=eVTXPUF4Oz4"
+            target="_blank"
+            rel="noopener noreferrer"
+          >Play on YouTube</a>
+          <button id="stop-music-button" type="button">Stop music</button>
+        </aside>
+      </section>
+    </main>
+
+    <script>
+      const textInput = document.querySelector("#text-input");
+      const voiceSelect = document.querySelector("#voice-select");
+      const speedInput = document.querySelector("#speed");
+      const speedValue = document.querySelector("#speed-value");
+      const status = document.querySelector("#status");
+      const musicFrame = document.querySelector("#music-background");
+      const songHelp = document.querySelector("#song-help");
+      const playMusicButton = document.querySelector("#play-music-button");
+      const songPhrase = "in the end";
+      const videoUrl =
+        "https://www.youtube-nocookie.com/embed/eVTXPUF4Oz4?autoplay=1&controls=1&playsinline=1&rel=0";
+      let voices = [];
+      let songActive = false;
+      let musicDismissed = false;
+
+      function loadVoices() {
+        voices = window.speechSynthesis.getVoices();
+        const selectedVoice = voiceSelect.value;
+        voiceSelect.replaceChildren();
+
+        if (voices.length === 0) {
+          const option = document.createElement("option");
+          option.textContent = "Default browser voice";
+          option.value = "";
+          voiceSelect.append(option);
+          return;
+        }
+
+        voices.forEach((voice, index) => {
+          const option = document.createElement("option");
+          option.value = String(index);
+          option.textContent = `${voice.name} (${voice.lang})`;
+          voiceSelect.append(option);
+        });
+
+        if (selectedVoice && Number(selectedVoice) < voices.length) {
+          voiceSelect.value = selectedVoice;
+        }
+      }
+
+      function updateSongBackground() {
+        const phraseIsPresent = textInput.value.toLocaleLowerCase().includes(songPhrase);
+
+        if (!phraseIsPresent) {
+          musicDismissed = false;
+          songActive = false;
+          musicFrame.removeAttribute("src");
+          document.body.classList.remove("music-active");
+          document.body.classList.remove("song-detected");
+          return;
+        }
+
+        document.body.classList.add("song-detected");
+        if (window.location.protocol === "file:") {
+          playMusicButton.disabled = true;
+          songHelp.textContent =
+            "YouTube blocks embedded playback when this page is opened as a local file (Error 153). Start the local web server described in README.md to play it here.";
+          return;
+        }
+
+        playMusicButton.disabled = false;
+        songHelp.textContent =
+          "The background player is loading. If it is silent or blocked, click Play background music.";
+        if (!songActive && !musicDismissed) {
+          songActive = true;
+          musicFrame.src = videoUrl;
+          document.body.classList.add("music-active");
+        }
+      }
+
+      playMusicButton.addEventListener("click", () => {
+        if (window.location.protocol === "file:") {
+          return;
+        }
+
+        musicDismissed = false;
+        songActive = true;
+        musicFrame.src = videoUrl;
+        document.body.classList.add("music-active");
+        songHelp.textContent =
+          "The player is starting. If it still does not play, check that YouTube is available on your network.";
+      });
+
+      textInput.addEventListener("input", () => {
+        const text = textInput.value;
+        const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+        document.querySelector("#text-count").textContent =
+          `${text.length} characters · ${words} words`;
+        updateSongBackground();
+      });
+
+      speedInput.addEventListener("input", () => {
+        speedValue.textContent = Number(speedInput.value).toFixed(1);
+      });
+
+      document.querySelector("#speak-button").addEventListener("click", () => {
+        const text = textInput.value.trim();
+        if (!text) {
+          status.textContent = "Type something first.";
+          return;
+        }
+
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        const voiceIndex = Number(voiceSelect.value);
+        if (Number.isInteger(voiceIndex) && voices[voiceIndex]) {
+          utterance.voice = voices[voiceIndex];
+        }
+        utterance.rate = Number(speedInput.value);
+        utterance.onstart = () => {
+          status.textContent = "Speaking...";
+        };
+        utterance.onend = () => {
+          status.textContent = "Finished";
+        };
+        utterance.onerror = (event) => {
+          status.textContent = `Speech could not be played: ${event.error}`;
+        };
+        window.speechSynthesis.speak(utterance);
+      });
+
+      document.querySelector("#stop-button").addEventListener("click", () => {
+        window.speechSynthesis.cancel();
+        status.textContent = "Speech stopped";
+      });
+
+      document.querySelector("#clear-button").addEventListener("click", () => {
+        textInput.value = "";
+        textInput.dispatchEvent(new Event("input"));
+        textInput.focus();
+        status.textContent = "Text cleared";
+      });
+
+      document.querySelector("#stop-music-button").addEventListener("click", () => {
+        musicDismissed = true;
+        songActive = false;
+        musicFrame.removeAttribute("src");
+        document.body.classList.remove("music-active");
+      });
+
+      if (!("speechSynthesis" in window) || !("SpeechSynthesisUtterance" in window)) {
+        status.textContent = "Text-to-speech is not supported in this browser.";
+        document.querySelector("#speak-button").disabled = true;
+      } else {
+        loadVoices();
+        window.speechSynthesis.addEventListener("voiceschanged", loadVoices);
+      }
+    </script>
+  </body>
+</html>
